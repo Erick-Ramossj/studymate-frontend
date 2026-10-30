@@ -18,4 +18,10 @@ export const usersApi = {
 
   setUserStatus: (id: string, isActive: boolean) =>
     apiClient.put<ApiResponse<User>>(`/users/${id}/status`, { isActive }),
+
+  // Admin only: flag a student as scholarship holder and/or assign an advisor.
+  assignAdvisor: (
+    id: string,
+    data: { isScholarship?: boolean; advisorId?: string | null },
+  ) => apiClient.put<ApiResponse<User>>(`/users/${id}/advisor`, data),
 }

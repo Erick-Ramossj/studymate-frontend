@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Sparkles, BookOpen, Lightbulb, RefreshCw, Dumbbell } from 'lucide-react'
+import axios from 'axios'
+import { Send, Bot, User, Sparkles, BookOpen, Lightbulb, RefreshCw, Dumbbell, AlertTriangle } from 'lucide-react'
 import { aiApi } from '@/api/ai.api'
 import { Button } from '@/components/ui/Button'
 import { useAuthStore } from '@/store/auth.store'
@@ -57,6 +58,8 @@ export function AiTutorPage() {
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | undefined>(undefined)
   const [subject, setSubject] = useState('')
+  // Mensaje de estado para errores de la IA (throttling de Bedrock, caída, etc.)
+  const [notice, setNotice] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -75,6 +78,7 @@ export function AiTutorPage() {
     setMessages((prev) => [...prev, userMsg])
     setInput('')
     setLoading(true)
+    setNotice(null)
 
     try {
       const res = await aiApi.chat({ message: text, sessionId, subject: subject || undefined })
@@ -88,9 +92,23 @@ export function AiTutorPage() {
         timestamp: message.timestamp,
       }
       setMessages((prev) => [...prev, assistantMsg])
-    } catch {
-      // Fallback mock response when backend is offline
-      await new Promise((r) => setTimeout(r, 800 + Math.random() * 600))
+    } catch (err) {
+      // Mostrar un aviso claro según el tipo de error de la IA (Bedrock).
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined
+      if (status === 429) {
+        setNotice(
+          'El tutor IA está recibiendo muchas solicitudes (throttling). Te respondemos con una guía mientras tanto; reintenta en unos segundos.',
+        )
+      } else if (status === 401) {
+        setNotice('Tu sesión expiró. Vuelve a iniciar sesión para usar el tutor IA.')
+      } else {
+        setNotice(
+          'No pudimos conectar con el tutor IA en este momento. Te mostramos una respuesta orientativa sin conexión.',
+        )
+      }
+
+      // Respuesta de respaldo para no dejar al estudiante sin ayuda.
+      await new Promise((r) => setTimeout(r, 400))
       const mockMsg: Message = {
         id: `mock-${Date.now()}`,
         role: 'ASSISTANT',
@@ -118,6 +136,7 @@ export function AiTutorPage() {
       timestamp: new Date().toISOString(),
     }])
     setSessionId(undefined)
+    setNotice(null)
   }
 
   return (
@@ -154,6 +173,21 @@ export function AiTutorPage() {
           </Button>
         </div>
       </div>
+
+      {/* Aviso de estado de la IA (throttling / error / offline) */}
+      {notice && (
+        <div className="flex items-start gap-2 mb-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+          <AlertTriangle size={15} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+          <p className="text-yellow-300 text-xs leading-relaxed flex-1">{notice}</p>
+          <button
+            onClick={() => setNotice(null)}
+            className="text-yellow-400/70 hover:text-yellow-300 text-xs"
+            aria-label="Descartar aviso"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-4 pr-1">

@@ -1,12 +1,56 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
+import axios, {
+  type AxiosError,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from 'axios'
+import { resolveMock } from './mock/resolver'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+
+// Offline/demo mode: when enabled, requests are served from the local mock
+// layer so the app works with no backend (e.g. the public hackathon demo).
+// Forced on by VITE_OFFLINE_MODE=true, otherwise auto-enabled as a fallback
+// whenever the backend is unreachable (network error / timeout).
+const FORCE_OFFLINE = import.meta.env.VITE_OFFLINE_MODE === 'true'
 
 export const apiClient = axios.create({
   baseURL: `${BASE_URL}/api`,
   headers: { 'Content-Type': 'application/json' },
   timeout: 15000,
 })
+
+// Keep a handle to the default adapter so we can delegate to the real network.
+const defaultAdapter = apiClient.defaults.adapter
+
+function isConnectionError(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false
+  // No HTTP response means the server was unreachable (DNS, CORS-less host,
+  // connection refused, timeout, etc.).
+  return !error.response
+}
+
+// Custom adapter: serve mock data when offline is forced, or transparently fall
+// back to mock data when the backend cannot be reached.
+apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig): Promise<AxiosResponse> => {
+  if (FORCE_OFFLINE) {
+    const mock = resolveMock(config)
+    if (mock) return mock
+  }
+
+  try {
+    const adapter =
+      typeof defaultAdapter === 'function'
+        ? defaultAdapter
+        : axios.getAdapter(defaultAdapter)
+    return await adapter(config)
+  } catch (error) {
+    if (isConnectionError(error)) {
+      const mock = resolveMock(config)
+      if (mock) return mock
+    }
+    throw error
+  }
+}
 
 // ── Request interceptor: attach Bearer token ──────────────────────────────────
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {

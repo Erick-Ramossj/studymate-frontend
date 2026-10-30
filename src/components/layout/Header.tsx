@@ -1,7 +1,8 @@
-import { Bell, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { useUIStore } from '@/store/ui.store'
 import { EDUCATION_LEVEL_LABELS } from '@/utils/format'
+import { NotificationBell } from './NotificationBell'
 
 export function Header() {
   const user = useAuthStore((s) => s.user)
@@ -24,12 +25,7 @@ export function Header() {
 
       {/* Right side */}
       <div className="flex items-center gap-4">
-        <button className="relative text-slate-400 hover:text-white transition-colors">
-          <Bell size={18} />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-500 rounded-full text-xs text-white flex items-center justify-center">
-            3
-          </span>
-        </button>
+        <NotificationBell />
 
         {user && (
           <div className="flex items-center gap-3">

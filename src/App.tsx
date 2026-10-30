@@ -17,6 +17,8 @@ import { TasksPage } from '@/pages/tasks/TasksPage'
 import { AssessmentsPage } from '@/pages/assessments/AssessmentsPage'
 import { AssessmentTakePage } from '@/pages/assessments/AssessmentTakePage'
 import { ProgressPage } from '@/pages/progress/ProgressPage'
+import { StudyPlanPage } from '@/pages/study-plan/StudyPlanPage'
+import { AtRiskPage } from '@/pages/at-risk/AtRiskPage'
 import { AiTutorPage } from '@/pages/ai-tutor/AiTutorPage'
 import { LibraryPage } from '@/pages/library/LibraryPage'
 import { CommunityPage } from '@/pages/community/CommunityPage'
@@ -63,6 +65,8 @@ export default function App() {
             <Route path="assessments" element={<AssessmentsPage />} />
             <Route path="assessments/:id/take" element={<AssessmentTakePage />} />
             <Route path="progress" element={<ProgressPage />} />
+            <Route path="study-plan" element={<StudyPlanPage />} />
+            <Route path="at-risk" element={<AtRiskPage />} />
             <Route path="ai-tutor" element={<AiTutorPage />} />
             <Route path="library" element={<LibraryPage />} />
             <Route path="community" element={<CommunityPage />} />

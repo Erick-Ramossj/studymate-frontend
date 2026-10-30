@@ -38,6 +38,8 @@ export interface User {
   isActive: boolean
   lastLoginAt?: string
   createdAt: string
+  isScholarship?: boolean
+  advisorId?: string | null
 }
 
 export interface Profile {
@@ -260,10 +262,80 @@ export interface RiskScore {
 
 export interface AbandonmentAlert {
   id: string
+  userId?: string
   riskScore: number
+  riskLevel?: RiskLevel
   triggerReason: string
+  notified?: boolean
   resolved: boolean
+  resolvedAt?: string | null
+  resolvedBy?: string | null
+  resolutionNote?: string | null
   createdAt: string
+}
+
+// ─── Notifications ──────────────────────────────────────────────────────────
+export type NotificationType = 'RISK_ALERT' | 'STUDY_PLAN' | 'REMINDER' | 'INFO'
+
+export interface Notification {
+  id: string
+  userId: string
+  type: NotificationType
+  title: string
+  body: string
+  refId?: string | null
+  read: boolean
+  createdAt: string
+}
+
+export interface NotificationList {
+  items: Notification[]
+  unreadCount: number
+}
+
+// ─── Study Plan ─────────────────────────────────────────────────────────────
+export type PlanItemStatus = 'PENDING' | 'DONE' | 'SKIPPED'
+
+export interface StudyPlanItem {
+  id: string
+  title: string
+  description: string
+  focus: string
+  order: number
+  status: PlanItemStatus
+  taskId: string | null
+  subject: { id: string; name: string; color: string } | null
+}
+
+export interface StudyPlan {
+  id: string
+  title: string
+  summary: string
+  weeklyHours: number
+  status: string
+  generatedAt: string
+  items: StudyPlanItem[]
+}
+
+export interface StudyPlanSummary {
+  id: string
+  title: string
+  totalItems: number
+  completedItems: number
+}
+
+// ─── At-risk students (advisor view) ──────────────────────────────────────────
+export interface AtRiskStudent {
+  userId: string
+  name: string
+  email: string
+  educationLevel: EducationLevel
+  isScholarship: boolean
+  riskScore: number
+  riskLevel: RiskLevel
+  openAlerts: number
+  openAlertId: string | null
+  lastAlertAt: string | null
 }
 
 export interface ActivityLog {
@@ -291,7 +363,13 @@ export interface StudentDashboard {
   enrolledCourses: (Enrollment & { course: Course })[]
   recentAssessments: Assessment[]
   weeklyProgress: WeeklyDay[]
-  riskAlert?: string
+  unreadNotifications?: number
+  studyPlan?: StudyPlanSummary | null
+  riskAlert?: {
+    message: string
+    riskScore: number
+    riskLevel: RiskLevel
+  } | null
 }
 
 export interface TeacherDashboard {
@@ -299,9 +377,20 @@ export interface TeacherDashboard {
     totalCourses: number
     totalStudents: number
     totalActiveCourses: number
+    advisees?: number
+    atRiskAdvisees?: number
   }
   myCourses: (Course & { studentCount: number })[]
   recentEnrollments: Enrollment[]
+  atRiskAdvisees?: {
+    userId: string
+    name: string
+    email: string
+    isScholarship: boolean
+    riskScore: number
+    riskLevel: RiskLevel
+    openAlerts: number
+  }[]
 }
 
 export interface AdminDashboard {

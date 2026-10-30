@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import { fileURLToPath, URL } from 'node:url'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -9,7 +10,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': '/home/pool/Proyectos/KIRO/studymate-frontend/src',
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
   server: {

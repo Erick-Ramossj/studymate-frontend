@@ -1,8 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, BookOpen, CheckSquare, ClipboardList,
-  TrendingUp, Bot, Library, Users, Settings, LogOut,
-  GraduationCap, Shield, Menu,
+  TrendingUp, Bot, Library, Users, LogOut,
+  GraduationCap, Shield, Menu, Sparkles, ShieldAlert,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useAuthStore } from '@/store/auth.store'
@@ -22,6 +22,8 @@ const navItems: NavItem[] = [
   { label: 'Tareas', to: '/tasks', icon: <CheckSquare size={18} /> },
   { label: 'Evaluaciones', to: '/assessments', icon: <ClipboardList size={18} /> },
   { label: 'Mi Progreso', to: '/progress', icon: <TrendingUp size={18} /> },
+  { label: 'Plan de estudio', to: '/study-plan', icon: <Sparkles size={18} />, roles: ['STUDENT'] },
+  { label: 'Estudiantes en riesgo', to: '/at-risk', icon: <ShieldAlert size={18} />, roles: ['TEACHER', 'ADMIN'] },
   { label: 'Tutor IA', to: '/ai-tutor', icon: <Bot size={18} /> },
   { label: 'Biblioteca', to: '/library', icon: <Library size={18} /> },
   { label: 'Comunidad', to: '/community', icon: <Users size={18} /> },

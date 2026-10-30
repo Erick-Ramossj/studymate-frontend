@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, CheckSquare, TrendingUp, Star, AlertTriangle, Clock, ChevronRight, Flame } from 'lucide-react'
+import { BookOpen, CheckSquare, TrendingUp, Star, AlertTriangle, Clock, ChevronRight, Flame, Sparkles, ShieldAlert } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { dashboardApi } from '@/api/dashboard.api'
 import { useAuthStore } from '@/store/auth.store'
@@ -91,20 +91,39 @@ function StudentDashboard({ data, userName }: { data: StudentDashboard; userName
         </div>
       </div>
 
-      {/* Risk alert */}
-      {data.user.riskScore >= 60 && (
+      {/* Risk alert — uses the backend-provided message when present */}
+      {(data.riskAlert || data.user.riskScore >= 60) && (
         <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
           <AlertTriangle size={18} className="text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-red-400 font-medium text-sm">Alerta de riesgo académico</p>
+            <p className="text-red-400 font-medium text-sm">Alerta de riesgo de abandono</p>
             <p className="text-slate-400 text-xs mt-0.5">
-              Tu nivel de riesgo es alto. Habla con el Tutor IA para retomar el ritmo.
+              {data.riskAlert?.message ??
+                'Tu nivel de riesgo es alto. Revisa tu plan de estudio para retomar el ritmo.'}
             </p>
           </div>
-          <Link to="/ai-tutor" className="ml-auto">
-            <Button variant="danger" size="sm">Ir al tutor</Button>
+          <Link to="/study-plan" className="ml-auto">
+            <Button variant="danger" size="sm">Ver mi plan</Button>
           </Link>
         </div>
+      )}
+
+      {/* Study plan progress */}
+      {data.studyPlan && (
+        <Link to="/study-plan" className="block">
+          <div className="flex items-center gap-4 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl hover:bg-indigo-500/15 transition-colors">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+              <Sparkles size={18} className="text-indigo-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-medium">{data.studyPlan.title}</p>
+              <p className="text-slate-400 text-xs mt-0.5">
+                {data.studyPlan.completedItems} de {data.studyPlan.totalItems} actividades completadas
+              </p>
+            </div>
+            <ChevronRight size={16} className="text-indigo-400 flex-shrink-0" />
+          </div>
+        </Link>
       )}
 
       {/* Stats */}
@@ -227,9 +246,9 @@ function StudentDashboard({ data, userName }: { data: StudentDashboard; userName
           <CardHeader><CardTitle>Acceso rápido</CardTitle></CardHeader>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Nueva tarea', to: '/tasks', icon: <CheckSquare size={18} />, color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' },
+              { label: 'Mi plan de estudio', to: '/study-plan', icon: <Sparkles size={18} />, color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' },
               { label: 'Hacer evaluación', to: '/assessments', icon: <TrendingUp size={18} />, color: 'bg-green-500/10 text-green-400 border-green-500/20' },
-              { label: 'Tutor IA', to: '/ai-tutor', icon: <Star size={18} />, color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
+              { label: 'Nueva tarea', to: '/tasks', icon: <CheckSquare size={18} />, color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
               { label: 'Ver cursos', to: '/courses', icon: <BookOpen size={18} />, color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
             ].map((item) => (
               <Link
@@ -273,10 +292,12 @@ function TaskRow({ task }: { task: Task }) {
 function TeacherDashboard({ data }: { data: TeacherDashboard | null }) {
   const user = useAuthStore((s) => s.user)
   const d = data ?? {
-    stats: { totalCourses: 2, totalStudents: 34, totalActiveCourses: 2 },
+    stats: { totalCourses: 2, totalStudents: 34, totalActiveCourses: 2, advisees: 0, atRiskAdvisees: 0 },
     myCourses: [],
     recentEnrollments: [],
+    atRiskAdvisees: [],
   }
+  const atRisk = d.atRiskAdvisees ?? []
 
   return (
     <div className="space-y-6">
@@ -284,11 +305,45 @@ function TeacherDashboard({ data }: { data: TeacherDashboard | null }) {
         <h1 className="text-2xl font-bold text-white">Panel del Docente</h1>
         <p className="text-slate-400 mt-1">Hola, {user?.name}</p>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Mis cursos" value={d.stats.totalCourses} icon={<BookOpen size={18} />} iconColor="bg-indigo-500/20 text-indigo-400" />
         <StatCard title="Estudiantes" value={d.stats.totalStudents} icon={<TrendingUp size={18} />} iconColor="bg-green-500/20 text-green-400" />
-        <StatCard title="Cursos activos" value={d.stats.totalActiveCourses} icon={<Star size={18} />} iconColor="bg-purple-500/20 text-purple-400" />
+        <StatCard title="Becarios asesorados" value={d.stats.advisees ?? 0} icon={<Star size={18} />} iconColor="bg-purple-500/20 text-purple-400" />
+        <StatCard title="En riesgo" value={d.stats.atRiskAdvisees ?? 0} subtitle={(d.stats.atRiskAdvisees ?? 0) > 0 ? '¡Atención!' : 'Al día'} icon={<ShieldAlert size={18} />} iconColor="bg-red-500/20 text-red-400" />
       </div>
+
+      {atRisk.length > 0 && (
+        <Card>
+          <CardHeader className="flex items-center justify-between mb-4">
+            <CardTitle className="flex items-center gap-2">
+              <ShieldAlert size={16} className="text-red-400" />
+              Becarios en riesgo de abandono
+            </CardTitle>
+            <Link to="/at-risk" className="text-indigo-400 text-xs hover:text-indigo-300 flex items-center gap-1">
+              Atender <ChevronRight size={12} />
+            </Link>
+          </CardHeader>
+          <div className="space-y-2">
+            {atRisk.map((s) => (
+              <div key={s.userId} className="flex items-center justify-between p-3 bg-[#242736] rounded-xl">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 font-bold text-sm flex-shrink-0">
+                    {s.name.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-white text-sm font-medium truncate">{s.name}</p>
+                    <p className="text-slate-500 text-xs truncate">{s.email}</p>
+                  </div>
+                </div>
+                <Badge variant={s.riskLevel === 'high' ? 'danger' : 'warning'}>
+                  Riesgo: {s.riskScore}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <Card>
         <CardHeader><CardTitle>Mis cursos</CardTitle></CardHeader>
         {d.myCourses.length === 0 ? (
